@@ -438,7 +438,7 @@
     let score = 0;
     let lines = 0;
     let level = 1;
-    let dropInterval = 1200;
+    let dropInterval = 1700;
     let dropCounter = 0;
     let lastTime = 0;
     let running = false;
@@ -570,7 +570,7 @@
         const gain = [0, 100, 300, 500, 800][cleared] || (cleared * 200);
         score += gain * level;
       level = Math.floor(lines / 10) + 1;
-      dropInterval = Math.max(260, 1200 - (level - 1) * 45);
+      dropInterval = Math.max(420, 1700 - (level - 1) * 55);
       updateStats();
       }
     }
@@ -587,6 +587,14 @@
           best = score;
           localStorage.setItem('clawdcity_tetris_best', String(best));
           bestEl.textContent = best;
+        }
+        // In takeover mode, keep session alive for continuous agent testing.
+        if (controlMode === 'agent') {
+          setTimeout(() => {
+            restartGame();
+            gameStarted = false;
+            startGame();
+          }, 800);
         }
       }
     }
@@ -764,7 +772,7 @@
       score = 0;
       lines = 0;
       level = 1;
-      dropInterval = 1200;
+      dropInterval = 1700;
       dropCounter = 0;
       running = false;
       paused = false;
@@ -1083,6 +1091,8 @@
             const input = data.input;
             const selfID = playerIdInput.value.trim();
             if (input.player_id === selfID && input.source === 'agent') {
+              appendRoomLog(`agent action -> ${input.action}`);
+              ensureAgentPlayableState();
               applyRemoteAction(input.action);
             }
           }
@@ -1100,8 +1110,19 @@
       roomStream.onerror = () => appendRoomLog('room stream disconnected');
     }
 
+    function ensureAgentPlayableState() {
+      if (gameOver) {
+        restartGame();
+        gameOver = false;
+      }
+      if (paused) paused = false;
+      if (!running) {
+        gameStarted = false;
+        startGame();
+      }
+    }
+
     function applyRemoteAction(action) {
-      if (!running || paused || gameOver) return;
       switch (action) {
         case 'move_left':
           move(-1, 0);
@@ -1177,7 +1198,7 @@
     }
 
     function handleKey(e) {
-      if (["ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp", " ", "p", "P"].includes(e.key)) e.preventDefault();
+      if (["ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp", " ", "p", "P", "r", "R"].includes(e.key)) e.preventDefault();
       if (!canHumanControl()) return;
       if (e.key === 'ArrowLeft') { move(-1, 0); sendRoomInput('move_left'); }
       if (e.key === 'ArrowRight') { move(1, 0); sendRoomInput('move_right'); }
@@ -1185,6 +1206,7 @@
       if (e.key === 'ArrowUp') { if (running && !paused && !gameOver) { tryRotate(); draw(); sendRoomInput('rotate'); } }
       if (e.key === ' ') { hardDrop(); sendRoomInput('hard_drop'); }
       if (e.key === 'p' || e.key === 'P') pauseGame();
+      if (e.key === 'r' || e.key === 'R') { restartGame(); gameStarted = false; startGame(); }
     }
 
     leftBtn.addEventListener('click', () => { if (!canHumanControl()) return; move(-1, 0); sendRoomInput('move_left'); });
