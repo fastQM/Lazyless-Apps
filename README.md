@@ -27,6 +27,13 @@ Optional API base override:
 
 - `http://127.0.0.1:8090/apps/tetris-web/web/tetris.html?apiBase=http://127.0.0.1:8080`
 
+Tetris room rendering notes:
+
+- Browser pulls `/apps/tetris-web/spec.json` and caches by `ETag` locally.
+- Browser sends `state_sync` to room every 500ms.
+- Room stream renders other players as thumbnail boards.
+- In `agent` mode, browser applies incoming agent actions for local visual sync.
+
 ## App metadata
 
 - Catalog: `catalog/apps.json`

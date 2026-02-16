@@ -5,6 +5,7 @@
   "runtime": "web-static",
   "version": "0.2.0",
   "entry": "/apps/tetris-web/web/tetris.html",
+  "spec": "/apps/tetris-web/spec.json",
   "api": {
     "base": "http://127.0.0.1:8080",
     "routes": [

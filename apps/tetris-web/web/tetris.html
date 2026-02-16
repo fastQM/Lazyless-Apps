@@ -202,6 +202,36 @@
       background: linear-gradient(180deg, #7cc2ff, #5b9cff);
       padding: 11px;
     }
+    .thumb-grid {
+      margin-top: 6px;
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .thumb-card {
+      border: 2px dashed #d6e7ff;
+      background: #f8fbff;
+      border-radius: 10px;
+      padding: 6px;
+      min-height: 136px;
+    }
+    .thumb-head {
+      font-size: 11px;
+      opacity: .82;
+      margin-bottom: 4px;
+      word-break: break-all;
+    }
+    .thumb-empty {
+      font-size: 11px;
+      opacity: .68;
+    }
+    .thumb-canvas {
+      width: 100%;
+      height: auto;
+      background: #14213f;
+      border: 2px solid #8bc1ff;
+      border-radius: 8px;
+    }
 
     @media (max-width: 920px) {
       .app { grid-template-columns: 1fr; }
@@ -262,6 +292,8 @@
         <div id="roomMeta" style="font-size:12px;margin-top:6px;line-height:1.45;"></div>
       </div>
       <pre id="roomLog" style="min-height:90px;margin-top:8px;"></pre>
+      <div class="mini-title" id="roomViewTitle">Room View</div>
+      <div id="roomThumbs" class="thumb-grid"></div>
 
       <div class="touch">
         <button id="leftBtn">Left</button>
@@ -337,6 +369,8 @@
         roomMetaIdle: 'No room yet. Register then click Ready.',
         roomMetaFmt: 'Player: {player} | Room: {room} | Host: {host} | Control: {mode}',
         roomWaiting: 'Waiting for another node/player to become ready...',
+        roomView: 'Room View',
+        roomNoData: 'No remote state yet',
         statusReady: 'Ready. Click Start / Resume.',
         statusRunning: 'Game running. Have fun!',
         statusResumed: 'Resumed.',
@@ -369,6 +403,8 @@
         roomMetaIdle: '尚未分房。先注册再点击准备。',
         roomMetaFmt: '玩家: {player} | 房间: {room} | Host: {host} | 控制: {mode}',
         roomWaiting: '正在等待另一个节点/玩家准备就绪...',
+        roomView: '房间画面',
+        roomNoData: '暂无远端状态',
         statusReady: '准备好后点击“开始 / 继续”。',
         statusRunning: '游戏进行中，加油！',
         statusResumed: '已继续。',
@@ -393,6 +429,7 @@
     const roomMetaEl = document.getElementById('roomMeta');
     const roomLogEl = document.getElementById('roomLog');
     const agentToggleBtn = document.getElementById('agentToggleBtn');
+    const roomThumbsEl = document.getElementById('roomThumbs');
 
     let board = [];
     let current = null;
@@ -412,7 +449,12 @@
     let controlMode = 'human';
     let roomStream = null;
     let roomPollTimer = null;
+    let roomStateSyncTimer = null;
     let gameStarted = false;
+    let roomPlayers = [];
+    const remoteStates = {};
+    let cachedSpec = null;
+    let stateSyncMS = 500;
 
     bestEl.textContent = best;
 
@@ -440,10 +482,12 @@
       downBtn.textContent = t('down');
       dropBtn.textContent = t('drop');
       document.getElementById('roomTitle').textContent = t('roomTitle');
+      document.getElementById('roomViewTitle').textContent = t('roomView');
       registerBtn.textContent = t('register');
       readyBtn.textContent = t('ready');
       agentToggleBtn.textContent = controlMode === 'agent' ? t('switchHuman') : t('switchAgent');
       if (!roomId) roomMetaEl.textContent = t('roomMetaIdle');
+      renderRoomThumbs();
     }
 
     function createBoard() {
@@ -741,6 +785,41 @@
       return await res.json();
     }
 
+    async function loadGameSpec() {
+      const specURL = new URL('../spec.json', window.location.href).toString();
+      const key = 'clawdcity_tetris_spec_cache_v1';
+      let cache = null;
+      try {
+        cache = JSON.parse(localStorage.getItem(key) || 'null');
+      } catch (_) {
+        cache = null;
+      }
+      const headers = {};
+      if (cache && cache.etag) headers['If-None-Match'] = cache.etag;
+      try {
+        const res = await fetch(specURL, {mode: 'cors', headers});
+        if (res.status === 304 && cache && cache.spec) {
+          cachedSpec = cache.spec;
+        } else if (res.ok) {
+          cachedSpec = await res.json();
+          localStorage.setItem(key, JSON.stringify({
+            etag: res.headers.get('ETag') || '',
+            spec_url: specURL,
+            spec: cachedSpec,
+            updated_at: Date.now()
+          }));
+        } else if (cache && cache.spec) {
+          cachedSpec = cache.spec;
+        }
+      } catch (_) {
+        if (cache && cache.spec) cachedSpec = cache.spec;
+      }
+      const ms = (((cachedSpec || {}).loop || {}).state_sync_ms);
+      if (typeof ms === 'number' && ms >= 100 && ms <= 5000) {
+        stateSyncMS = ms;
+      }
+    }
+
     function appendRoomLog(msg) {
       const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
       const prev = roomLogEl.textContent ? roomLogEl.textContent + '\n' : '';
@@ -762,19 +841,102 @@
       agentToggleBtn.textContent = controlMode === 'agent' ? t('switchHuman') : t('switchAgent');
     }
 
+    function snapshotBoard() {
+      const b = board.map(row => row.slice());
+      if (current) {
+        for (let y = 0; y < current.matrix.length; y++) {
+          for (let x = 0; x < current.matrix[y].length; x++) {
+            if (!current.matrix[y][x]) continue;
+            const by = current.y + y;
+            const bx = current.x + x;
+            if (by >= 0 && by < ROWS && bx >= 0 && bx < COLS) b[by][bx] = current.type;
+          }
+        }
+      }
+      return b.map(row => row.map(v => v || '.').join(''));
+    }
+
+    function drawThumbBoard(canvas, rows) {
+      const c = canvas.getContext('2d');
+      const w = 120;
+      const h = 240;
+      canvas.width = w;
+      canvas.height = h;
+      const cell = Math.floor(Math.min(w / COLS, h / ROWS));
+      c.clearRect(0, 0, w, h);
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          c.fillStyle = '#16305d';
+          c.fillRect(x * cell, y * cell, cell, cell);
+          c.strokeStyle = '#ffffff12';
+          c.strokeRect(x * cell, y * cell, cell, cell);
+          const ch = (rows[y] && rows[y][x]) ? rows[y][x] : '.';
+          if (ch !== '.') drawCell(x, y, COLORS[ch] || '#9ec3ff', c, cell);
+        }
+      }
+    }
+
+    function renderRoomThumbs() {
+      const selfID = playerIdInput.value.trim();
+      const peers = roomPlayers.filter(id => id && id !== selfID);
+      if (!peers.length) {
+        roomThumbsEl.innerHTML = `<div class="thumb-card"><div class="thumb-empty">${t('roomNoData')}</div></div>`;
+        return;
+      }
+      roomThumbsEl.innerHTML = peers.map(pid => `
+        <div class="thumb-card">
+          <div class="thumb-head">${pid}</div>
+          <canvas class="thumb-canvas" id="thumb-${pid.replace(/[^a-zA-Z0-9_-]/g, '_')}" width="120" height="240"></canvas>
+        </div>
+      `).join('');
+      for (const pid of peers) {
+        const safe = pid.replace(/[^a-zA-Z0-9_-]/g, '_');
+        const canvas = document.getElementById(`thumb-${safe}`);
+        if (!canvas) continue;
+        const state = remoteStates[pid];
+        if (state && Array.isArray(state.board)) {
+          drawThumbBoard(canvas, state.board);
+        } else {
+          drawThumbBoard(canvas, Array.from({length: ROWS}, () => '.'.repeat(COLS)));
+        }
+      }
+    }
+
+    function startRoomStateSync() {
+      if (roomStateSyncTimer) clearInterval(roomStateSyncTimer);
+      roomStateSyncTimer = setInterval(() => {
+        if (!roomId) return;
+        const source = controlMode === 'agent' ? 'agent' : 'human';
+        sendRoomInput('state_sync', {
+          board: snapshotBoard(),
+          score,
+          lines,
+          level,
+          game_over: gameOver
+        }, source);
+      }, stateSyncMS);
+    }
+
     async function registerPlayer() {
       const player = playerIdInput.value.trim();
       if (!player) return;
       roomId = '';
       hostId = '';
       controlMode = 'human';
+      roomPlayers = [];
+      for (const k in remoteStates) delete remoteStates[k];
       gameStarted = false;
       if (roomPollTimer) {
         clearInterval(roomPollTimer);
         roomPollTimer = null;
       }
+      if (roomStateSyncTimer) {
+        clearInterval(roomStateSyncTimer);
+        roomStateSyncTimer = null;
+      }
       const data = await apiPost('/api/tetris/register', {player_id: player, app_id: 'tetris', version: '0.1.0'});
       appendRoomLog(`register -> ${JSON.stringify(data)}`);
+      renderRoomThumbs();
       updateRoomMeta();
     }
 
@@ -786,7 +948,9 @@
       if (data.room && data.room.id) {
         roomId = data.room.id;
         hostId = data.room.host_id || '';
+        roomPlayers = data.room.player_ids || [];
         connectRoomStream(roomId);
+        startRoomStateSync();
         setStatus(t('statusRunning'));
         startGame();
       }
@@ -812,10 +976,13 @@
         roomId = p.room_id;
         const roomData = await apiGet(`/api/tetris/room/${encodeURIComponent(roomId)}`);
         hostId = (roomData.room && roomData.room.host_id) || hostId;
+        roomPlayers = (roomData.room && roomData.room.player_ids) || roomPlayers;
         connectRoomStream(roomId);
+        startRoomStateSync();
         appendRoomLog(`matched via poll -> ${JSON.stringify(roomData)}`);
         setStatus(t('statusRunning'));
         startGame();
+        renderRoomThumbs();
         updateRoomMeta();
         clearInterval(roomPollTimer);
         roomPollTimer = null;
@@ -832,8 +999,24 @@
             controlMode = data.meta.to_mode || controlMode;
             updateRoomMeta();
           }
+          if (data.type === 'room_input' && data.input && data.input.action === 'state_sync') {
+            const pid = data.input.player_id;
+            if (pid && pid !== playerIdInput.value.trim() && data.input.payload && Array.isArray(data.input.payload.board)) {
+              remoteStates[pid] = data.input.payload;
+              renderRoomThumbs();
+            }
+          }
+          if (data.type === 'room_input' && data.input) {
+            const input = data.input;
+            const selfID = playerIdInput.value.trim();
+            if (input.player_id === selfID && input.source === 'agent') {
+              applyRemoteAction(input.action);
+            }
+          }
           if (data.room && data.room.host_id) {
             hostId = data.room.host_id;
+            roomPlayers = data.room.player_ids || roomPlayers;
+            renderRoomThumbs();
             updateRoomMeta();
           }
           appendRoomLog(`room event -> ${ev.data}`);
@@ -842,6 +1025,30 @@
         }
       };
       roomStream.onerror = () => appendRoomLog('room stream disconnected');
+    }
+
+    function applyRemoteAction(action) {
+      if (!running || paused || gameOver) return;
+      switch (action) {
+        case 'move_left':
+          move(-1, 0);
+          break;
+        case 'move_right':
+          move(1, 0);
+          break;
+        case 'soft_drop':
+          move(0, 1);
+          break;
+        case 'rotate':
+          tryRotate();
+          draw();
+          break;
+        case 'hard_drop':
+          hardDrop();
+          break;
+        default:
+          break;
+      }
     }
 
     async function toggleAgent() {
@@ -861,7 +1068,7 @@
       return controlMode === 'human';
     }
 
-    function sendRoomInput(action, payload = {}) {
+    function sendRoomInput(action, payload = {}, source = 'human') {
       if (!roomId) return;
       const player = playerIdInput.value.trim();
       if (!player) return;
@@ -869,7 +1076,7 @@
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         mode: 'cors',
-        body: JSON.stringify({player_id: player, source: 'human', action, payload})
+        body: JSON.stringify({player_id: player, source, action, payload})
       }).catch(() => {});
     }
 
@@ -904,11 +1111,14 @@
       }
     });
 
-    applyI18n();
-    playerIdInput.value = `player_${Math.random().toString(36).slice(2, 7)}`;
-    updateRoomMeta();
-    restartGame();
-    setStatus(t('roomMetaIdle'));
+    (async function bootstrap() {
+      await loadGameSpec();
+      applyI18n();
+      playerIdInput.value = `player_${Math.random().toString(36).slice(2, 7)}`;
+      updateRoomMeta();
+      restartGame();
+      setStatus(t('roomMetaIdle'));
+    })();
   </script>
 </body>
 </html>

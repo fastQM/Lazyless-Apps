@@ -1,0 +1,50 @@
+{
+  "app_id": "tetris",
+  "spec_version": "1.1.0",
+  "state_version": "1.0.0",
+  "required_runtime_params": ["player_id"],
+  "session": {
+    "resolve_room": {
+      "endpoint": "/api/tetris/player/{player_id}",
+      "room_field": "player.room_id"
+    },
+    "watch_control": {
+      "endpoint": "/api/tetris/player/{player_id}",
+      "mode_field": "player.control_mode",
+      "active_value": "agent",
+      "poll_ms": 1000
+    }
+  },
+  "loop": {
+    "observation_endpoint": "/api/tetris/room/{room_id}/state",
+    "action_endpoint": "/api/tetris/room/{room_id}/input",
+    "control_endpoint": "/api/tetris/room/{room_id}/control",
+    "suggested_tick_ms": 300,
+    "state_sync_ms": 500
+  },
+  "actions": [
+    "move_left",
+    "move_right",
+    "rotate",
+    "soft_drop",
+    "hard_drop",
+    "noop"
+  ],
+  "input_schema": {
+    "required": ["player_id", "source", "action"],
+    "source": ["human", "agent"]
+  },
+  "observation_schema": {
+    "room_fields": ["id", "host_id", "player_ids"],
+    "per_player_state_fields": [
+      "player_id",
+      "source",
+      "board",
+      "score",
+      "lines",
+      "level",
+      "game_over",
+      "updated_at"
+    ]
+  }
+}
