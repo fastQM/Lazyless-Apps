@@ -336,6 +336,7 @@
         switchHuman: 'Return To Human',
         roomMetaIdle: 'No room yet. Register then click Ready.',
         roomMetaFmt: 'Player: {player} | Room: {room} | Host: {host} | Control: {mode}',
+        roomWaiting: 'Waiting for another node/player to become ready...',
         statusReady: 'Ready. Click Start / Resume.',
         statusRunning: 'Game running. Have fun!',
         statusResumed: 'Resumed.',
@@ -367,6 +368,7 @@
         switchHuman: '切回人工操作',
         roomMetaIdle: '尚未分房。先注册再点击准备。',
         roomMetaFmt: '玩家: {player} | 房间: {room} | Host: {host} | 控制: {mode}',
+        roomWaiting: '正在等待另一个节点/玩家准备就绪...',
         statusReady: '准备好后点击“开始 / 继续”。',
         statusRunning: '游戏进行中，加油！',
         statusResumed: '已继续。',
@@ -410,6 +412,7 @@
     let controlMode = 'human';
     let roomStream = null;
     let roomPollTimer = null;
+    let gameStarted = false;
 
     bestEl.textContent = best;
 
@@ -660,6 +663,8 @@
     }
 
     function startGame() {
+      if (gameStarted) return;
+      gameStarted = true;
       if (gameOver) {
         restartGame();
         return;
@@ -763,6 +768,7 @@
       roomId = '';
       hostId = '';
       controlMode = 'human';
+      gameStarted = false;
       if (roomPollTimer) {
         clearInterval(roomPollTimer);
         roomPollTimer = null;
@@ -781,9 +787,12 @@
         roomId = data.room.id;
         hostId = data.room.host_id || '';
         connectRoomStream(roomId);
+        setStatus(t('statusRunning'));
+        startGame();
       }
       appendRoomLog(`ready -> ${JSON.stringify(data)}`);
       if (!data.matched) {
+        appendRoomLog(t('roomWaiting'));
         startRoomPolling(player);
       }
       updateRoomMeta();
@@ -805,6 +814,8 @@
         hostId = (roomData.room && roomData.room.host_id) || hostId;
         connectRoomStream(roomId);
         appendRoomLog(`matched via poll -> ${JSON.stringify(roomData)}`);
+        setStatus(t('statusRunning'));
+        startGame();
         updateRoomMeta();
         clearInterval(roomPollTimer);
         roomPollTimer = null;
@@ -894,9 +905,10 @@
     });
 
     applyI18n();
+    playerIdInput.value = `player_${Math.random().toString(36).slice(2, 7)}`;
     updateRoomMeta();
     restartGame();
-    startGame();
+    setStatus(t('roomMetaIdle'));
   </script>
 </body>
 </html>
