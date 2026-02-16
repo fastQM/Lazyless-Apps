@@ -947,6 +947,24 @@
       }, stateSyncMS);
     }
 
+    async function restoreExistingRoom(player) {
+      if (!player || !player.room_id) return false;
+      roomId = player.room_id;
+      controlMode = player.control_mode || controlMode;
+      const roomData = await apiGet(`/api/tetris/room/${encodeURIComponent(roomId)}`);
+      hostId = (roomData.room && roomData.room.host_id) || hostId;
+      roomPlayers = (roomData.room && roomData.room.player_ids) || roomPlayers;
+      restartGame();
+      connectRoomStream(roomId);
+      startRoomStateSync();
+      setStatus(t('statusRunning'));
+      startGame();
+      appendRoomLog(`restored room -> ${roomId}`);
+      renderRoomThumbs();
+      updateRoomMeta();
+      return true;
+    }
+
     async function registerPlayer() {
       try {
         const player = playerIdInput.value.trim();
@@ -968,8 +986,10 @@
         const data = await apiPost('/api/tetris/register', {player_id: player, app_id: 'tetris', version: '0.1.0'});
         appendRoomLog(`register -> ${JSON.stringify(data)}`);
         localStorage.setItem(PLAYER_ID_KEY, player);
-        renderRoomThumbs();
-        updateRoomMeta();
+        if (!(await restoreExistingRoom(data.player))) {
+          renderRoomThumbs();
+          updateRoomMeta();
+        }
       } catch (err) {
         appendRoomLog(`register error -> ${err && err.message ? err.message : String(err)}`);
         if (String(err && err.message || '').includes('local seat already occupied')) {
@@ -1001,7 +1021,16 @@
         }
         updateRoomMeta();
       } catch (err) {
-        appendRoomLog(`ready error -> ${err && err.message ? err.message : String(err)}`);
+        const msg = err && err.message ? err.message : String(err);
+        appendRoomLog(`ready error -> ${msg}`);
+        if (String(msg).includes('already in room')) {
+          try {
+            const player = await apiGet(`/api/tetris/player/${encodeURIComponent(playerIdInput.value.trim())}`);
+            await restoreExistingRoom(player.player);
+          } catch (e2) {
+            appendRoomLog(`restore error -> ${e2 && e2.message ? e2.message : String(e2)}`);
+          }
+        }
       }
     }
 
