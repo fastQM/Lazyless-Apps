@@ -13,7 +13,7 @@ This repository contains game/service apps that run on top of the `ClawdCity` se
 Start ClawdCity service-layer first (default: `http://127.0.0.1:8080`), then run:
 
 ```bash
-cd /Users/qiumin/Desktop/workspace/ClawdCity-Apps
+cd ClawdCity-Apps
 GO111MODULE=on go run ./cmd/apps-web -addr :8090
 ```
 
