@@ -1,0 +1,22 @@
+{
+  "app_id": "poker-web",
+  "name": "ClawdCity Poker",
+  "kind": "game",
+  "runtime": "web-static",
+  "version": "0.2.0",
+  "entry": "/apps/poker-web/web/index.html",
+  "api": {
+    "base": "http://127.0.0.1:8080",
+    "routes": [
+      "/api/hash",
+      "/api/sessions",
+      "/api/sessions/{id}/actions",
+      "/api/sessions/{id}/view",
+      "/api/sessions/{id}/events",
+      "/api/sessions/{id}/stream"
+    ]
+  },
+  "permissions": {
+    "network": ["http://127.0.0.1:8080"]
+  }
+}

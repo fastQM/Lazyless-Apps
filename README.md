@@ -6,6 +6,7 @@ This repository contains game/service apps that run on top of the `ClawdCity` se
 
 ## Current apps
 
+- `poker-web` (Texas Hold'em MVP web client)
 - `tetris-web` (cartoon web app, realtime room + agent takeover UI)
 
 ## Run
@@ -19,6 +20,7 @@ GO111MODULE=on go run ./cmd/apps-web -addr :8090
 
 Open:
 
+- `http://127.0.0.1:8090/apps/poker-web/web/index.html?apiBase=http://127.0.0.1:8080`
 - `http://127.0.0.1:8090/apps/tetris-web/web/tetris.html`
 
 Optional API base override:

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClawdCity Poker</title>
+  <style>
+    :root {
+      --bg: #f4efe4;
+      --ink: #1f2a2e;
+      --accent: #0d6e61;
+      --card: #fffdf8;
+      --line: #d8cfbf;
+      --danger: #8a2332;
+      --table: #136a4e;
+      --table-edge: #0d4f3a;
+      --chip: #f3f7f4;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "IBM Plex Sans", "Noto Sans SC", sans-serif;
+      color: var(--ink);
+      background: radial-gradient(circle at top left, #fff8e9, var(--bg) 55%);
+    }
+    .wrap { max-width: 980px; margin: 32px auto; padding: 0 16px; }
+    h1 { margin: 0 0 16px; font-size: 28px; letter-spacing: .02em; }
+    .grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 4px 16px rgba(38,24,8,.05);
+    }
+    .table-wrap {
+      background: linear-gradient(180deg, var(--table) 0%, #0f5b44 100%);
+      border: 8px solid var(--table-edge);
+      border-radius: 22px;
+      padding: 16px;
+      color: #f4fff9;
+      min-height: 260px;
+      position: relative;
+    }
+    .table-center {
+      text-align: center;
+      margin: 6px 0 12px;
+      font-weight: 700;
+      letter-spacing: .03em;
+    }
+    .seats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .seat {
+      border: 1px solid rgba(255,255,255,.25);
+      background: rgba(5, 18, 14, .32);
+      border-radius: 10px;
+      padding: 8px;
+      min-height: 60px;
+    }
+    .seat.turn {
+      outline: 2px solid #f7d774;
+      box-shadow: 0 0 0 2px rgba(247,215,116,.25);
+    }
+    .seat .name { font-weight: 700; font-size: 13px; }
+    .seat .meta { font-size: 12px; opacity: .9; }
+    .cards {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+    .card-chip {
+      background: var(--chip);
+      color: #1f2a2e;
+      border-radius: 6px;
+      padding: 4px 8px;
+      border: 1px solid #d5e2da;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    label { display:block; font-size: 12px; opacity: .8; margin: 8px 0 4px; }
+    input, select, button {
+      width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: #fff;
+      font: inherit;
+    }
+    button { cursor: pointer; background: var(--accent); color: white; border: none; margin-top: 8px; }
+    button.secondary { background: #446; }
+    button.danger { background: var(--danger); }
+    pre {
+      margin: 0; white-space: pre-wrap; word-break: break-word; background: #f8f3e8;
+      border: 1px solid var(--line); border-radius: 8px; padding: 10px; min-height: 120px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>ClawdCity Poker</h1>
+    <div class="panel" style="margin-bottom:12px;">
+      <strong>More Apps</strong>
+      <div style="margin-top:8px;">
+        <a href="/apps/tetris-web/web/tetris.html?apiBase=http://127.0.0.1:8080" style="font-weight:700;color:#234d9a;text-decoration:none;">Open ClawdCity Tetris</a>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="panel">
+        <strong>1) 建立牌桌</strong>
+        <label>小盲</label><input id="sb" type="number" value="10" />
+        <label>大盲</label><input id="bb" type="number" value="20" />
+        <label>最大人数</label><input id="maxPlayers" type="number" value="6" />
+        <button onclick="createSession()">创建 Session</button>
+        <label>Session ID</label><input id="sessionId" placeholder="s_1" />
+      </div>
+
+      <div class="panel">
+        <strong>2) 玩家操作</strong>
+        <label>玩家ID</label><input id="playerId" value="alice" />
+        <label>买入/下注额度</label><input id="amount" type="number" value="1000" />
+        <label>动作</label>
+        <select id="actionType">
+          <option value="join">join</option>
+          <option value="start_hand">start_hand</option>
+          <option value="commit">commit</option>
+          <option value="reveal">reveal</option>
+          <option value="check">check</option>
+          <option value="call">call</option>
+          <option value="raise">raise</option>
+          <option value="fold">fold</option>
+        </select>
+        <label>commit/reveal 值</label><input id="seed" placeholder="seed or hash" />
+        <button class="secondary" onclick="makeCommitHash()">由 seed 计算 commit hash</button>
+        <button onclick="submitAction()">提交动作</button>
+      </div>
+
+      <div class="panel">
+        <strong>3) 刷新视图</strong>
+        <button class="secondary" onclick="loadSessions()">查看 Session 列表</button>
+        <button class="secondary" onclick="loadView()">查看当前玩家视图</button>
+        <button class="secondary" onclick="loadEvents()">查看事件日志</button>
+        <button class="secondary" onclick="toggleStream()">切换实时事件流</button>
+        <button class="danger" onclick="autoPoll()">切换自动刷新</button>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <div class="panel">
+        <strong>Table Scene</strong>
+        <div id="tableScene" class="table-wrap">
+          <div class="table-center" id="tableMeta">等待创建牌桌</div>
+          <div class="cards" id="boardCards"></div>
+          <div class="cards" id="myCards"></div>
+          <div class="seats" id="seatGrid"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <div class="panel">
+        <strong>View</strong>
+        <pre id="viewBox"></pre>
+      </div>
+      <div class="panel">
+        <strong>Events</strong>
+        <pre id="eventBox"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let timer = null;
+    let eventSource = null;
+    const query = new URLSearchParams(window.location.search);
+    const apiBase = (query.get('apiBase') || `${window.location.protocol}//${window.location.hostname}:8080`).replace(/\/+$/, '');
+
+    function apiURL(path) {
+      const normalized = path.startsWith('/') ? path : `/${path}`;
+      return `${apiBase}${normalized}`;
+    }
+
+    async function createSession() {
+      const payload = {
+        game_id: 'poker',
+        params: {
+          small_blind: Number(document.getElementById('sb').value),
+          big_blind: Number(document.getElementById('bb').value),
+          max_players: Number(document.getElementById('maxPlayers').value)
+        }
+      };
+      const res = await fetch(apiURL('/api/sessions'), {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data.session_id) document.getElementById('sessionId').value = data.session_id;
+      write('eventBox', data);
+      connectStream();
+    }
+
+    async function submitAction() {
+      const sid = document.getElementById('sessionId').value.trim();
+      if (!sid) return;
+      const type = document.getElementById('actionType').value;
+      const amount = Number(document.getElementById('amount').value || 0);
+      const player = document.getElementById('playerId').value.trim();
+      const seed = document.getElementById('seed').value.trim();
+      const action = { player_id: player, type, amount };
+      if (type === 'commit') action.data = { hash: seed };
+      if (type === 'reveal') action.data = { seed };
+      const res = await fetch(apiURL(`/api/sessions/${sid}/actions`), {
+        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(action)
+      });
+      write('eventBox', await res.json());
+      await loadView();
+    }
+
+    async function makeCommitHash() {
+      const seed = document.getElementById('seed').value.trim();
+      if (!seed) return;
+      const res = await fetch(apiURL('/api/hash'), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({seed})
+      });
+      const data = await res.json();
+      if (data.hash) document.getElementById('seed').value = data.hash;
+      write('eventBox', data);
+    }
+
+    async function loadSessions() {
+      const res = await fetch(apiURL('/api/sessions'));
+      write('eventBox', await res.json());
+    }
+
+    async function loadView() {
+      const sid = document.getElementById('sessionId').value.trim();
+      const player = document.getElementById('playerId').value.trim();
+      if (!sid || !player) return;
+      const res = await fetch(apiURL(`/api/sessions/${sid}/view?player_id=${encodeURIComponent(player)}`));
+      const data = await res.json();
+      write('viewBox', data);
+      renderTable(data.view || {}, player);
+    }
+
+    async function loadEvents() {
+      const sid = document.getElementById('sessionId').value.trim();
+      if (!sid) return;
+      const res = await fetch(apiURL(`/api/sessions/${sid}/events`));
+      write('eventBox', await res.json());
+    }
+
+    function autoPoll() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+        return;
+      }
+      timer = setInterval(async () => {
+        await loadView();
+        await loadEvents();
+      }, 2000);
+    }
+
+    function toggleStream() {
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+        return;
+      }
+      connectStream();
+    }
+
+    function connectStream() {
+      const sid = document.getElementById('sessionId').value.trim();
+      if (!sid || eventSource) return;
+      eventSource = new EventSource(apiURL(`/api/sessions/${sid}/stream`));
+      eventSource.onmessage = (ev) => {
+        const existing = document.getElementById('eventBox').textContent || '';
+        const next = `${existing}\n${ev.data}`.trim();
+        document.getElementById('eventBox').textContent = next;
+      };
+      eventSource.onerror = () => {
+        eventSource.close();
+        eventSource = null;
+      };
+    }
+
+    function write(id, data) {
+      document.getElementById(id).textContent = JSON.stringify(data, null, 2);
+    }
+
+    function renderTable(view, currentPlayer) {
+      const phase = view.phase || 'waiting';
+      const handId = view.hand_id ?? '-';
+      const pot = view.pot ?? 0;
+      const currentBet = view.current_bet ?? 0;
+      const turnPlayer = view.turn_player || '-';
+      const players = Array.isArray(view.players) ? view.players : [];
+      const stacks = view.stacks || {};
+      const bets = view.bets || {};
+      const board = Array.isArray(view.board) ? view.board : [];
+      const hole = Array.isArray(view.hole_cards) ? view.hole_cards : [];
+
+      document.getElementById('tableMeta').textContent =
+        `Hand #${handId} | Phase: ${phase} | Pot: ${pot} | Bet: ${currentBet} | Turn: ${turnPlayer}`;
+
+      const boardEl = document.getElementById('boardCards');
+      boardEl.innerHTML = board.map(c => `<span class="card-chip">${fmtCard(c)}</span>`).join('');
+      if (!board.length) boardEl.innerHTML = '<span class="card-chip">No board cards</span>';
+
+      const myEl = document.getElementById('myCards');
+      myEl.innerHTML = hole.map(c => `<span class="card-chip">${fmtCard(c)}</span>`).join('');
+      if (!hole.length) myEl.innerHTML = '<span class="card-chip">Your hole cards hidden</span>';
+
+      const seatEl = document.getElementById('seatGrid');
+      if (!players.length) {
+        seatEl.innerHTML = '<div class="seat">No players seated</div>';
+        return;
+      }
+      seatEl.innerHTML = players.map(p => {
+        const cls = p === turnPlayer ? 'seat turn' : 'seat';
+        const me = p === currentPlayer ? ' (you)' : '';
+        const stack = stacks[p] ?? 0;
+        const bet = bets[p] ?? 0;
+        return `<div class="${cls}"><div class="name">${p}${me}</div><div class="meta">stack: ${stack}</div><div class="meta">bet: ${bet}</div></div>`;
+      }).join('');
+    }
+
+    function fmtCard(c) {
+      if (!c) return '?';
+      const rankMap = {11:'J',12:'Q',13:'K',14:'A'};
+      const r = rankMap[c.rank] || String(c.rank || '?');
+      return `${r}${c.suit || ''}`;
+    }
+  </script>
+</body>
+</html>

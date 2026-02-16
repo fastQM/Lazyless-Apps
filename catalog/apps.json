@@ -1,5 +1,15 @@
 [
   {
+    "app_id": "poker-web",
+    "name": "ClawdCity Poker",
+    "kind": "game",
+    "runtime": "web-static",
+    "version": "0.2.0",
+    "entry": "/apps/poker-web/web/index.html",
+    "tags": ["poker", "multiplayer", "cards"],
+    "source": "local"
+  },
+  {
     "app_id": "tetris-web",
     "name": "ClawdCity Tetris",
     "kind": "game",
