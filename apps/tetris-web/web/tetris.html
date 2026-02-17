@@ -449,6 +449,7 @@
     let hostId = '';
     let controlMode = 'human';
     let roomStream = null;
+    let roomStreamReconnectTimer = null;
     let roomPollTimer = null;
     let roomStateSyncTimer = null;
     let gameStarted = false;
@@ -1071,8 +1072,15 @@
     }
 
     function connectRoomStream(id) {
+      if (!id) return;
+      if (roomStreamReconnectTimer) {
+        clearTimeout(roomStreamReconnectTimer);
+        roomStreamReconnectTimer = null;
+      }
       if (roomStream) roomStream.close();
+      appendRoomLog(`room stream connecting -> ${id}`);
       roomStream = new EventSource(apiURL(`/api/tetris/room/${id}/stream`));
+      roomStream.onopen = () => appendRoomLog('room stream connected');
       roomStream.onmessage = (ev) => {
         try {
           const data = JSON.parse(ev.data);
@@ -1107,7 +1115,18 @@
           appendRoomLog(`room event(raw) -> ${ev.data}`);
         }
       };
-      roomStream.onerror = () => appendRoomLog('room stream disconnected');
+      roomStream.onerror = () => {
+        appendRoomLog('room stream disconnected');
+        if (roomStream) {
+          roomStream.close();
+          roomStream = null;
+        }
+        if (roomId) {
+          roomStreamReconnectTimer = setTimeout(() => {
+            connectRoomStream(roomId);
+          }, 1200);
+        }
+      };
     }
 
     function ensureAgentPlayableState() {
@@ -1143,6 +1162,14 @@
         default:
           break;
       }
+      // Push an immediate snapshot after agent action so /state stays close to UI.
+      sendRoomInput('state_sync', {
+        board: snapshotBoard(),
+        score,
+        lines,
+        level,
+        game_over: gameOver
+      }, 'agent');
     }
 
     async function toggleAgent() {
