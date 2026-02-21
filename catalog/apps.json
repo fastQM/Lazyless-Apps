@@ -1,23 +1,13 @@
 [
   {
-    "app_id": "poker-web",
-    "name": "ClawdCity Poker",
-    "kind": "game",
+    "app_id": "social-web",
+    "name": "ClawdCity Social",
+    "kind": "social",
     "runtime": "web-static",
-    "version": "0.2.0",
-    "entry": "/apps/poker-web/web/index.html",
-    "tags": ["poker", "multiplayer", "cards"],
-    "source": "local"
-  },
-  {
-    "app_id": "tetris-web",
-    "name": "ClawdCity Tetris",
-    "kind": "game",
-    "runtime": "web-static",
-    "version": "0.2.0",
-    "entry": "/apps/tetris-web/web/tetris.html",
-    "spec": "/apps/tetris-web/spec.json",
-    "tags": ["tetris", "multiplayer", "cartoon"],
+    "version": "0.1.0",
+    "entry": "/apps/social-web/web/index.html",
+    "spec": "/apps/social-web/spec.json",
+    "tags": ["social", "p2p", "chat"],
     "source": "local"
   }
 ]

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ClawdCity Social</title>
+  <style>
+    :root {
+      --bg: #f0f6f5;
+      --panel: #ffffff;
+      --line: #d1e3de;
+      --ink: #16312b;
+      --muted: #4f6c63;
+      --accent: #1d8a70;
+      --danger: #a53f3f;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Avenir Next", "Segoe UI", sans-serif; background: linear-gradient(120deg, #e9f4f0, var(--bg)); color: var(--ink); }
+    .wrap { display: grid; grid-template-columns: 320px 1fr; min-height: 100vh; }
+    .sidebar { border-right: 1px solid var(--line); padding: 16px; background: #fbfffd; }
+    .main { padding: 16px; }
+    .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+    .title { margin: 0 0 8px; font-size: 20px; }
+    .small { color: var(--muted); font-size: 12px; }
+    input, textarea { width: 100%; border: 1px solid var(--line); border-radius: 8px; padding: 8px; font: inherit; margin-top: 6px; }
+    textarea { min-height: 80px; resize: vertical; }
+    button { border: 0; border-radius: 8px; padding: 8px 10px; background: var(--accent); color: #fff; cursor: pointer; }
+    button.alt { background: #fff; color: var(--ink); border: 1px solid var(--line); }
+    button.danger { background: var(--danger); }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .list { display: grid; gap: 8px; }
+    .item { border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+    .mono { font-family: Menlo, monospace; font-size: 11px; word-break: break-all; }
+    .chat { max-height: 260px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; padding: 8px; background: #fcfffe; }
+    @media (max-width: 980px) { .wrap { grid-template-columns: 1fr; } .sidebar { border-right: 0; border-bottom: 1px solid var(--line); } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <aside class="sidebar">
+      <h1 class="title">Social v1</h1>
+      <div class="small">Public broadcast is plaintext. Friend requests and direct messages are encrypted.</div>
+      <div class="card" id="authCard">
+        <h3 style="margin:0 0 8px;">Init / Unlock</h3>
+        <input id="username" placeholder="Username" />
+        <textarea id="bio" placeholder="Bio"></textarea>
+        <textarea id="avatar" placeholder="Avatar data URL (optional)"></textarea>
+        <input id="passphrase" type="password" placeholder="Key passphrase" />
+        <label><input type="checkbox" id="discoverable" checked /> Discoverable</label><br>
+        <label><input type="checkbox" id="allowStrangers" checked /> Allow stranger requests</label><br>
+        <label><input type="checkbox" id="allowFeed" checked /> Allow global feed</label>
+        <div class="row" style="margin-top:8px;">
+          <button onclick="initSocial()">Initialize</button>
+          <button class="alt" onclick="unlockSocial()">Unlock Existing</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 8px;">Invite</h3>
+        <div class="row">
+          <button onclick="makeInvite()">Create Invite Token</button>
+        </div>
+        <textarea id="inviteOut" class="mono" placeholder="Invite token"></textarea>
+        <textarea id="inviteIn" class="mono" placeholder="Paste invite token"></textarea>
+        <input id="inviteMsg" placeholder="Request message" />
+        <button onclick="requestByInvite()">Send Request By Invite</button>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 8px;">Broadcast</h3>
+        <textarea id="broadcastText" placeholder="Say something publicly"></textarea>
+        <button onclick="sendBroadcast()">Broadcast</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="card"><pre id="meBox" class="mono">Loading...</pre></div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Discovery</h3>
+        <div id="discovery" class="list"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Friend Requests</h3>
+        <div id="requests" class="list"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Friends</h3>
+        <div id="friends" class="list"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Broadcast Feed</h3>
+        <div id="feed" class="list"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Direct Messages</h3>
+        <input id="chatUser" placeholder="Friend user_id" />
+        <div class="chat" id="chatBox"></div>
+        <input id="chatText" placeholder="Message" />
+        <div class="row" style="margin-top:8px;">
+          <button onclick="loadChat()">Load Chat</button>
+          <button onclick="sendChat()">Send</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    async function getJSON(url) { const r = await fetch(url); return await r.json(); }
+    async function postJSON(url, body) { const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)}); return await r.json(); }
+
+    function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    async function refresh() {
+      const state = await getJSON('/api/social/v1/state');
+      document.getElementById('meBox').textContent = JSON.stringify(state.me || {initialized:false}, null, 2);
+
+      const d = state.discovery || [];
+      document.getElementById('discovery').innerHTML = d.map(u => `<div class="item"><b>${esc(u.username || u.user_id)}</b><div class="small mono">${esc(u.user_id)}</div><div class="small">${esc(u.bio || '')}</div><input id="msg-${u.user_id}" placeholder="request msg" /><div class="row" style="margin-top:6px;"><button onclick="requestFriend('${u.user_id}')">Add Friend</button></div></div>`).join('') || '<div class="small">No peers yet.</div>';
+
+      const reqs = state.requests || [];
+      document.getElementById('requests').innerHTML = reqs.map(r => `<div class="item"><b>${esc(r.from_name || r.from_user_id)}</b><div class="small mono">${esc(r.request_id)}</div><div class="small">${esc(r.status)} · ${esc(r.message || '')}</div>${r.status==='pending_in' ? `<div class="row" style="margin-top:6px;"><button onclick="respondReq('${r.request_id}', true)">Accept</button><button class="danger" onclick="respondReq('${r.request_id}', false)">Reject</button></div>` : ''}</div>`).join('') || '<div class="small">No requests.</div>';
+
+      const fs = state.friends || [];
+      document.getElementById('friends').innerHTML = fs.map(f => `<div class="item"><b>${esc(f.user_id)}</b><div class="row" style="margin-top:6px;"><button class="alt" onclick="document.getElementById('chatUser').value='${f.user_id}'">Chat</button></div></div>`).join('') || '<div class="small">No friends.</div>';
+
+      const feed = state.broadcasts || [];
+      document.getElementById('feed').innerHTML = feed.slice(-40).reverse().map(m => `<div class="item"><b>${esc(m.from_user)}</b><div>${esc(m.text)}</div><div class="small">${esc(m.created_at)}</div></div>`).join('') || '<div class="small">No broadcast yet.</div>';
+    }
+
+    async function initSocial() {
+      const res = await postJSON('/api/social/v1/init', {
+        username: document.getElementById('username').value,
+        bio: document.getElementById('bio').value,
+        avatar_data: document.getElementById('avatar').value,
+        passphrase: document.getElementById('passphrase').value,
+        settings: {
+          discoverable: document.getElementById('discoverable').checked,
+          allow_stranger_requests: document.getElementById('allowStrangers').checked,
+          allow_global_feed: document.getElementById('allowFeed').checked
+        }
+      });
+      if (res.error) alert(res.error);
+      await refresh();
+    }
+
+    async function unlockSocial() {
+      const res = await postJSON('/api/social/v1/unlock', {passphrase: document.getElementById('passphrase').value});
+      if (res.error) alert(res.error);
+      await refresh();
+    }
+
+    async function sendBroadcast() {
+      const res = await postJSON('/api/social/v1/broadcast', {text: document.getElementById('broadcastText').value});
+      if (res.error) alert(res.error);
+      document.getElementById('broadcastText').value = '';
+      await refresh();
+    }
+
+    async function requestFriend(userID) {
+      const msg = document.getElementById(`msg-${userID}`)?.value || '';
+      const res = await postJSON('/api/social/v1/friends/request', {target_user_id: userID, message: msg});
+      if (res.error) alert(res.error);
+      await refresh();
+    }
+
+    async function respondReq(requestID, accept) {
+      const res = await postJSON('/api/social/v1/friends/respond', {request_id: requestID, accept});
+      if (res.error) alert(res.error);
+      await refresh();
+    }
+
+    async function makeInvite() {
+      const res = await postJSON('/api/social/v1/friends/invite', {});
+      if (res.error) return alert(res.error);
+      document.getElementById('inviteOut').value = res.token || '';
+    }
+
+    async function requestByInvite() {
+      const res = await postJSON('/api/social/v1/friends/request-by-invite', {
+        token: document.getElementById('inviteIn').value,
+        message: document.getElementById('inviteMsg').value
+      });
+      if (res.error) alert(res.error);
+      await refresh();
+    }
+
+    async function loadChat() {
+      const uid = document.getElementById('chatUser').value.trim();
+      if (!uid) return;
+      const res = await getJSON('/api/social/v1/messages/' + encodeURIComponent(uid));
+      const list = res.messages || [];
+      document.getElementById('chatBox').innerHTML = list.map(m => `<div style="margin-bottom:6px;"><b>${esc(m.from_user_id)}</b>: ${esc(m.body)}</div>`).join('') || '<div class="small">No messages.</div>';
+    }
+
+    async function sendChat() {
+      const uid = document.getElementById('chatUser').value.trim();
+      if (!uid) return;
+      const res = await postJSON('/api/social/v1/messages/send', {to_user_id: uid, body: document.getElementById('chatText').value});
+      if (res.error) alert(res.error);
+      document.getElementById('chatText').value = '';
+      await loadChat();
+      await refresh();
+    }
+
+    function connectStream() {
+      const es = new EventSource('/api/social/v1/stream');
+      es.addEventListener('ready', () => refresh());
+      es.addEventListener('state', () => refresh());
+      es.onerror = () => {
+        es.close();
+        setTimeout(connectStream, 1500);
+      };
+    }
+
+    connectStream();
+    refresh();
+  </script>
+</body>
+</html>

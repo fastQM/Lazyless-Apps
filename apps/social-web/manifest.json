@@ -1,0 +1,9 @@
+{
+  "app_id": "social-web",
+  "name": "ClawdCity Social",
+  "version": "0.1.0",
+  "kind": "social",
+  "description": "P2P social app with profile setup, discovery, friend requests and encrypted direct messaging.",
+  "tags": ["social", "p2p", "chat"],
+  "launch_url": "http://{hostname}:8090/apps/social-web/web/index.html"
+}
