@@ -330,7 +330,7 @@
     };
 
     const KEYS = Object.keys(SHAPES);
-    const PLAYER_ID_KEY = 'lazyless_tetris_player_id';
+    const PLAYER_ID_KEY = 'assembler_tetris_player_id';
 
     const boardCanvas = document.getElementById('board');
     const ctx = boardCanvas.getContext('2d');
@@ -415,7 +415,7 @@
       }
     };
 
-    let currentLang = localStorage.getItem('lazyless_tetris_lang') || 'en';
+    let currentLang = localStorage.getItem('assembler_tetris_lang') || 'en';
     if (!I18N[currentLang]) currentLang = 'en';
 
     const leftBtn = document.getElementById('leftBtn');
@@ -444,7 +444,7 @@
     let running = false;
     let paused = false;
     let gameOver = false;
-    let best = Number(localStorage.getItem('lazyless_tetris_best') || 0);
+    let best = Number(localStorage.getItem('assembler_tetris_best') || 0);
     let roomId = '';
     let hostId = '';
     let controlMode = 'human';
@@ -586,7 +586,7 @@
         setStatus(t('statusGameOver'), true);
         if (score > best) {
           best = score;
-          localStorage.setItem('lazyless_tetris_best', String(best));
+          localStorage.setItem('assembler_tetris_best', String(best));
           bestEl.textContent = best;
         }
         // In takeover mode, keep session alive for continuous agent testing.
@@ -826,7 +826,7 @@
 
     async function loadGameSpec() {
       const specURL = new URL('../spec.json', window.location.href).toString();
-      const key = 'lazyless_tetris_spec_cache_v1';
+      const key = 'assembler_tetris_spec_cache_v1';
       let cache = null;
       try {
         cache = JSON.parse(localStorage.getItem(key) || 'null');
@@ -1249,7 +1249,7 @@
     langSelect.value = currentLang;
     langSelect.addEventListener('change', () => {
       currentLang = langSelect.value;
-      localStorage.setItem('lazyless_tetris_lang', currentLang);
+      localStorage.setItem('assembler_tetris_lang', currentLang);
       applyI18n();
       if (!running && !gameOver) {
         setStatus(t('statusReady'));

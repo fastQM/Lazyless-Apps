@@ -13,7 +13,7 @@ import (
 
 func main() {
 	addr := flag.String("addr", ":8090", "http listen address")
-	socialRPCSock := flag.String("social-rpc-sock", filepath.Join("..", "ClawdCity", "data", "lazyless-p2p.sock"), "lazyless local rpc unix socket path")
+	socialRPCSock := flag.String("social-rpc-sock", filepath.Join("..", "ClawdCity", "data", "assembler-p2p.sock"), "assembler local rpc unix socket path")
 	socialPassphrase := flag.String("social-passphrase", os.Getenv("SOCIAL_KEY_PASSPHRASE"), "optional social key passphrase for startup unlock")
 	flag.Parse()
 

@@ -1,8 +1,8 @@
-# Lazyless-Apps
+# Assembler-Apps
 
-Application-layer project for Lazyless.
+Application-layer project for Assembler.
 
-This repository contains game/service apps that run on top of the `Lazyless` service-layer node.
+This repository contains game/service apps that run on top of the `Assembler` service-layer node.
 
 ## Current apps
 
@@ -10,10 +10,10 @@ This repository contains game/service apps that run on top of the `Lazyless` ser
 
 ## Run
 
-Start Lazyless service-layer first (default: `http://127.0.0.1:8080`), then run:
+Start Assembler service-layer first (default: `http://127.0.0.1:8080`), then run:
 
 ```bash
-cd Lazyless-Apps
+cd Assembler-Apps
 GO111MODULE=on go run ./cmd/apps-web -addr :8090
 ```
 
