@@ -65,13 +65,13 @@
     }
     button.danger { background: var(--danger); }
 
-    .init-shell {
+    .center-shell {
       min-height: 100vh;
       display: grid;
       place-items: center;
       padding: 24px;
     }
-    .init-card {
+    .center-card {
       width: min(760px, 100%);
       background: var(--panel);
       border: 1px solid var(--line);
@@ -79,15 +79,15 @@
       box-shadow: var(--shadow);
       padding: 24px;
     }
-    .init-head h1 { margin: 0; font-size: 28px; }
-    .init-head p { margin: 6px 0 0; color: var(--muted); }
+    .center-head h1 { margin: 0; font-size: 28px; }
+    .center-head p { margin: 6px 0 0; color: var(--muted); }
     .grid-two {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
       margin-top: 16px;
     }
-    .init-actions { margin-top: 16px; display: flex; gap: 8px; }
+    .actions { margin-top: 16px; display: flex; gap: 8px; }
 
     .app-shell {
       min-height: 100vh;
@@ -134,7 +134,7 @@
       background: #fafcff;
     }
     .list { display: grid; }
-    .friend-item, .req-item {
+    .friend-item, .req-item, .nav-item {
       border: 0;
       border-bottom: 1px solid var(--line);
       background: #fff;
@@ -143,8 +143,8 @@
       width: 100%;
       cursor: pointer;
     }
-    .friend-item:last-child, .req-item:last-child { border-bottom: 0; }
-    .friend-item.active { background: #eff6ff; }
+    .friend-item:last-child, .req-item:last-child, .nav-item:last-child { border-bottom: 0; }
+    .friend-item.active, .nav-item.active { background: #eff6ff; }
     .friend-item .name { font-weight: 600; font-size: 14px; }
     .friend-item .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
@@ -213,9 +213,21 @@
       border: 1px solid var(--line);
       margin-top: 8px;
     }
+    .config-wrap {
+      padding: 16px;
+      overflow: auto;
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+    .config-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
 
     @media (max-width: 980px) {
-      .grid-two { grid-template-columns: 1fr; }
+      .grid-two, .config-grid { grid-template-columns: 1fr; }
       .app-shell { grid-template-columns: 1fr; }
       .left { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
       .bubble { max-width: 92%; }
@@ -224,11 +236,30 @@
   </style>
 </head>
 <body>
-  <section id="initView" class="init-shell hidden">
-    <div class="init-card">
-      <div class="init-head">
-        <h1>Set Up Your Social Profile</h1>
-        <p>One-time setup. After initialization, you'll enter the main chat workspace directly.</p>
+  <section id="homeView" class="center-shell">
+    <div class="center-card">
+      <div class="center-head">
+        <h1>Assembler Apps</h1>
+        <p>App entry. Choose an app to continue.</p>
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <div class="card-title">Available App</div>
+        <div style="padding:14px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+          <div>
+            <div style="font-weight:700;">Social</div>
+            <div class="muted" style="font-size:13px;margin-top:4px;">P2P direct chat with friend request and invite flows.</div>
+          </div>
+          <button onclick="enterSocial()">Open</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="setupView" class="center-shell hidden">
+    <div class="center-card">
+      <div class="center-head">
+        <h1>Initialize Social Profile</h1>
+        <p>First-time setup only.</p>
       </div>
       <div class="grid-two">
         <div>
@@ -237,7 +268,7 @@
         </div>
         <div>
           <label>Passphrase</label>
-          <input id="initPassphrase" type="password" placeholder="Unlock local key" />
+          <input id="initPassphrase" type="password" placeholder="Create unlock password" />
         </div>
       </div>
       <div style="margin-top:10px;">
@@ -252,11 +283,29 @@
         <label><input type="checkbox" id="initDiscoverable" checked /> Discoverable</label>
         <label><input type="checkbox" id="initAllowStranger" checked /> Allow stranger requests</label>
       </div>
-      <div class="init-actions">
+      <div class="actions">
         <button onclick="submitInit()">Initialize</button>
-        <button class="secondary" onclick="submitUnlock()">Unlock Existing</button>
+        <button class="secondary" onclick="backHome()">Back</button>
       </div>
-      <div id="initMsg" class="muted" style="margin-top:10px;"></div>
+      <div id="setupMsg" class="muted" style="margin-top:10px;"></div>
+    </div>
+  </section>
+
+  <section id="unlockView" class="center-shell hidden">
+    <div class="center-card" style="max-width:560px;">
+      <div class="center-head">
+        <h1>Unlock Social</h1>
+        <p>Profile already exists. Enter passphrase to continue.</p>
+      </div>
+      <div style="margin-top:14px;">
+        <label>Passphrase</label>
+        <input id="unlockPassphrase" type="password" placeholder="Unlock local key" />
+      </div>
+      <div class="actions">
+        <button onclick="submitUnlock()">Unlock</button>
+        <button class="secondary" onclick="backHome()">Back</button>
+      </div>
+      <div id="unlockMsg" class="muted" style="margin-top:10px;"></div>
     </div>
   </section>
 
@@ -273,24 +322,16 @@
         </section>
 
         <section class="card">
-          <h3 class="card-title">Requests</h3>
-          <div id="requestList" class="list"></div>
+          <h3 class="card-title">Navigation</h3>
+          <div class="list">
+            <button id="navChat" class="nav-item active" onclick="switchMainTab('chat')">Chat</button>
+            <button id="navConfig" class="nav-item" onclick="switchMainTab('config')">Config</button>
+          </div>
         </section>
 
         <section class="card">
-          <h3 class="card-title">Config</h3>
-          <div style="padding:10px 12px;display:grid;gap:8px;">
-            <label><input type="checkbox" id="cfgDiscoverable" /> Discoverable</label>
-            <label><input type="checkbox" id="cfgAllowStranger" /> Allow stranger requests</label>
-            <button class="secondary" onclick="saveConfig()">Save Config</button>
-            <input id="discoverTarget" placeholder="User ID to add" />
-            <button class="secondary" onclick="sendRequestByUserID()">Add Friend</button>
-            <button class="secondary" onclick="createInvite()">Create Invite</button>
-            <textarea id="inviteToken" class="mono" placeholder="Invite token"></textarea>
-            <textarea id="inviteInput" class="mono" placeholder="Paste invite token"></textarea>
-            <input id="inviteMessage" placeholder="Request message" />
-            <button onclick="requestByInvite()">Add By Invite</button>
-          </div>
+          <h3 class="card-title">Requests</h3>
+          <div id="requestList" class="list"></div>
         </section>
       </div>
     </aside>
@@ -304,11 +345,57 @@
         <div class="head-sub">Realtime sync via SSE</div>
       </header>
 
-      <section id="chatStream" class="chat-stream">
+      <section id="chatPanel" class="chat-stream">
         <div class="muted">No conversation selected.</div>
       </section>
 
-      <footer class="composer">
+      <section id="configPanel" class="config-wrap hidden">
+        <div class="card">
+          <div class="card-title">Profile & Settings</div>
+          <div style="padding:12px;display:grid;gap:10px;">
+            <div class="config-grid">
+              <div>
+                <label>Username</label>
+                <input id="cfgUsername" placeholder="Display name" />
+              </div>
+              <div>
+                <label>User ID</label>
+                <input id="cfgUserID" disabled />
+              </div>
+            </div>
+            <div>
+              <label>Bio</label>
+              <textarea id="cfgBio"></textarea>
+            </div>
+            <div>
+              <label>Avatar (data URL)</label>
+              <textarea id="cfgAvatar"></textarea>
+            </div>
+            <div class="row">
+              <label><input type="checkbox" id="cfgDiscoverable" /> Discoverable</label>
+              <label><input type="checkbox" id="cfgAllowStranger" /> Allow stranger requests</label>
+            </div>
+            <div class="row">
+              <button class="secondary" onclick="saveConfig()">Save Config</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Add Friends</div>
+          <div style="padding:12px;display:grid;gap:8px;">
+            <input id="discoverTarget" placeholder="User ID to add" />
+            <button class="secondary" onclick="sendRequestByUserID()">Add Friend</button>
+            <button class="secondary" onclick="createInvite()">Create Invite</button>
+            <textarea id="inviteToken" class="mono" placeholder="Invite token"></textarea>
+            <textarea id="inviteInput" class="mono" placeholder="Paste invite token"></textarea>
+            <input id="inviteMessage" placeholder="Request message" />
+            <button onclick="requestByInvite()">Add By Invite</button>
+          </div>
+        </div>
+      </section>
+
+      <footer id="composer" class="composer">
         <input id="chatInput" placeholder="Type a message..." />
         <input id="chatFile" class="attach" type="file" accept="image/*" />
         <button onclick="sendMessage()">Send</button>
@@ -321,6 +408,8 @@
     let selectedFriend = '';
     let es = null;
     let pendingMedia = null;
+    let enteredSocial = false;
+    let mainTab = 'chat';
 
     function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -333,30 +422,102 @@
       return await r.json();
     }
 
-    function setInitMessage(msg, isError) {
-      const el = document.getElementById('initMsg');
+    function showStage(stage) {
+      document.getElementById('homeView').classList.toggle('hidden', stage !== 'home');
+      document.getElementById('setupView').classList.toggle('hidden', stage !== 'setup');
+      document.getElementById('unlockView').classList.toggle('hidden', stage !== 'unlock');
+      document.getElementById('mainView').classList.toggle('hidden', stage !== 'main');
+    }
+
+    function setSetupMessage(msg, isError) {
+      const el = document.getElementById('setupMsg');
       el.textContent = msg || '';
       el.style.color = isError ? '#dc2626' : '#64748b';
     }
 
-    function switchView(initialized) {
-      document.getElementById('initView').classList.toggle('hidden', initialized);
-      document.getElementById('mainView').classList.toggle('hidden', !initialized);
+    function setUnlockMessage(msg, isError) {
+      const el = document.getElementById('unlockMsg');
+      el.textContent = msg || '';
+      el.style.color = isError ? '#dc2626' : '#64748b';
+    }
+
+    function getSocialStage(state) {
+      const hasProfile = Boolean((state && state.has_profile) || (state && state.me));
+      const unlocked = Boolean(state && (state.unlocked || state.initialized));
+      if (!hasProfile) return 'setup';
+      if (!unlocked) return 'unlock';
+      return 'main';
+    }
+
+    function enterSocial() {
+      enteredSocial = true;
+      const stage = getSocialStage(latestState || {});
+      showStage(stage);
+      if (stage === 'main') {
+        renderMain();
+      }
+    }
+
+    function backHome() {
+      enteredSocial = false;
+      showStage('home');
     }
 
     function applyState(state) {
       latestState = state || {};
-      const initialized = Boolean(latestState.initialized);
-      switchView(initialized);
-      if (!initialized) return;
+      if (!enteredSocial) {
+        showStage('home');
+        return;
+      }
+      const stage = getSocialStage(latestState);
+      showStage(stage);
+      if (stage !== 'main') return;
+      renderMain();
+    }
 
+    function renderMain() {
       const me = latestState.me || {};
       document.getElementById('meLine').textContent = `${me.username || 'unknown'} · ${me.user_id || '-'}`;
+      document.getElementById('cfgUsername').value = me.username || '';
+      document.getElementById('cfgUserID').value = me.user_id || '';
+      document.getElementById('cfgBio').value = me.bio || '';
+      document.getElementById('cfgAvatar').value = me.avatar_data || '';
       document.getElementById('cfgDiscoverable').checked = Boolean(me.settings && me.settings.discoverable);
       document.getElementById('cfgAllowStranger').checked = Boolean(me.settings && me.settings.allow_stranger_requests);
-
       renderFriends();
       renderRequests();
+      renderMainPanel();
+    }
+
+    function switchMainTab(tab) {
+      mainTab = tab;
+      if (tab === 'chat') {
+        document.getElementById('navChat').classList.add('active');
+        document.getElementById('navConfig').classList.remove('active');
+      } else {
+        document.getElementById('navChat').classList.remove('active');
+        document.getElementById('navConfig').classList.add('active');
+      }
+      renderMainPanel();
+    }
+
+    function renderMainPanel() {
+      const chatPanel = document.getElementById('chatPanel');
+      const configPanel = document.getElementById('configPanel');
+      const composer = document.getElementById('composer');
+
+      if (mainTab === 'config') {
+        document.getElementById('chatTitle').textContent = 'Config';
+        document.getElementById('chatSubtitle').textContent = 'Manage profile, visibility and friend-add methods.';
+        chatPanel.classList.add('hidden');
+        composer.classList.add('hidden');
+        configPanel.classList.remove('hidden');
+        return;
+      }
+
+      configPanel.classList.add('hidden');
+      chatPanel.classList.remove('hidden');
+      composer.classList.remove('hidden');
       renderChat();
     }
 
@@ -395,7 +556,7 @@
       if (!selectedFriend) {
         document.getElementById('chatTitle').textContent = 'Select a friend';
         document.getElementById('chatSubtitle').textContent = 'Pick a friend on the left to open the conversation.';
-        document.getElementById('chatStream').innerHTML = '<div class="muted">No conversation selected.</div>';
+        document.getElementById('chatPanel').innerHTML = '<div class="muted">No conversation selected.</div>';
         return;
       }
 
@@ -411,15 +572,15 @@
         const image = m.media_data && String(m.media_mime || '').startsWith('image/') ? `<img class="img-preview" src="${esc(m.media_data)}" alt="${esc(m.media_name || 'image')}" />` : '';
         return `<div class="${cls}">${text}${image}<div class="meta">${esc(who)} · ${esc(m.created_at || '')}</div></div>`;
       }).join('') || '<div class="muted">No messages yet.</div>';
-      const stream = document.getElementById('chatStream');
+      const stream = document.getElementById('chatPanel');
       stream.innerHTML = html;
       stream.scrollTop = stream.scrollHeight;
     }
 
     function selectFriend(userID) {
       selectedFriend = userID;
+      switchMainTab('chat');
       renderFriends();
-      renderChat();
     }
 
     function connectSSE() {
@@ -442,12 +603,12 @@
         const state = await getJSON('/api/social/v1/state');
         applyState(state);
       } catch (_) {
-        switchView(false);
+        showStage('home');
       }
     }
 
     async function submitInit() {
-      setInitMessage('Initializing...', false);
+      setSetupMessage('Initializing...', false);
       const res = await postJSON('/api/social/v1/init', {
         username: document.getElementById('initUsername').value,
         bio: document.getElementById('initBio').value,
@@ -459,28 +620,29 @@
         }
       });
       if (res.error) {
-        setInitMessage(res.error, true);
+        setSetupMessage(res.error, true);
         return;
       }
-      setInitMessage('Initialized.', false);
+      setSetupMessage('Initialized.', false);
+      await loadInitialState();
     }
 
     async function submitUnlock() {
-      setInitMessage('Unlocking...', false);
-      const res = await postJSON('/api/social/v1/unlock', {passphrase: document.getElementById('initPassphrase').value});
+      setUnlockMessage('Unlocking...', false);
+      const res = await postJSON('/api/social/v1/unlock', {passphrase: document.getElementById('unlockPassphrase').value});
       if (res.error) {
-        setInitMessage(res.error, true);
+        setUnlockMessage(res.error, true);
         return;
       }
-      setInitMessage('Unlocked.', false);
+      setUnlockMessage('Unlocked.', false);
+      await loadInitialState();
     }
 
     async function saveConfig() {
-      if (!latestState || !latestState.me) return;
       const res = await postJSON('/api/social/v1/profile', {
-        username: latestState.me.username || '',
-        bio: latestState.me.bio || '',
-        avatar_data: latestState.me.avatar_data || '',
+        username: document.getElementById('cfgUsername').value,
+        bio: document.getElementById('cfgBio').value,
+        avatar_data: document.getElementById('cfgAvatar').value,
         settings: {
           discoverable: document.getElementById('cfgDiscoverable').checked,
           allow_stranger_requests: document.getElementById('cfgAllowStranger').checked

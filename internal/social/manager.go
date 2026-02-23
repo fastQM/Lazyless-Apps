@@ -280,6 +280,8 @@ func (m *Manager) Snapshot() map[string]any {
 
 	return map[string]any{
 		"initialized":   m.profile != nil && m.identity != nil,
+		"has_profile":   m.profile != nil,
+		"unlocked":      m.profile != nil && m.identity != nil,
 		"me":            me,
 		"discovery":     known,
 		"requests":      reqs,
