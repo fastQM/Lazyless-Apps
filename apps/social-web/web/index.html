@@ -6,64 +6,76 @@
   <title>Assembler Social</title>
   <style>
     :root {
-      --bg: #f3f5f8;
-      --bg-soft: #eef2f7;
-      --panel: #ffffff;
-      --ink: #0f172a;
-      --muted: #64748b;
-      --line: #e2e8f0;
-      --brand: #2563eb;
-      --brand-soft: #dbeafe;
-      --danger: #dc2626;
-      --radius: 14px;
-      --shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+      --bg: #000000;
+      --bg-soft: #0a0a0a;
+      --panel: #000000;
+      --panel-soft: #111111;
+      --ink: #f5f5f5;
+      --muted: #8b98a5;
+      --line: #2f3336;
+      --brand: #1d9bf0;
+      --brand-soft: rgba(29, 155, 240, 0.2);
+      --danger: #f4212e;
+      --radius: 16px;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
       color: var(--ink);
-      font-family: "Inter", "SF Pro Text", "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top right, #ffffff 0, #f4f7ff 26%, transparent 42%),
-        linear-gradient(145deg, #f8fafc, var(--bg));
+      font-family: "SF Pro Text", "Helvetica Neue", "Segoe UI", sans-serif;
+      background: radial-gradient(circle at 10% 0%, #14171a, var(--bg) 40%);
     }
     .hidden { display: none !important; }
     .muted { color: var(--muted); }
     .mono { font-family: Menlo, monospace; font-size: 12px; word-break: break-all; }
     .row { display: flex; gap: 8px; align-items: center; }
 
+    .icon {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      vertical-align: -3px;
+      margin-right: 8px;
+    }
+
     input, textarea {
       width: 100%;
       border: 1px solid var(--line);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 10px 12px;
-      background: #fff;
+      background: #0f0f0f;
       font: inherit;
       color: var(--ink);
     }
     input:focus, textarea:focus {
       outline: none;
-      border-color: #bfd5ff;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+      border-color: var(--brand);
+      box-shadow: 0 0 0 2px var(--brand-soft);
     }
     textarea { resize: vertical; min-height: 86px; }
     button {
-      border: 0;
-      border-radius: 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
       padding: 10px 14px;
       font: inherit;
       cursor: pointer;
-      background: var(--brand);
-      color: #fff;
+      background: #0f0f0f;
+      color: var(--ink);
       white-space: nowrap;
     }
+    button.primary {
+      background: var(--ink);
+      color: #000;
+      border-color: var(--ink);
+      font-weight: 600;
+    }
     button.secondary {
-      background: #fff;
+      background: transparent;
       color: var(--ink);
       border: 1px solid var(--line);
     }
-    button.danger { background: var(--danger); }
+    button.danger { border-color: var(--danger); color: var(--danger); }
 
     .center-shell {
       min-height: 100vh;
@@ -75,12 +87,11 @@
       width: min(760px, 100%);
       background: var(--panel);
       border: 1px solid var(--line);
-      border-radius: 20px;
-      box-shadow: var(--shadow);
+      border-radius: 24px;
       padding: 24px;
     }
-    .center-head h1 { margin: 0; font-size: 28px; }
-    .center-head p { margin: 6px 0 0; color: var(--muted); }
+    .center-head h1 { margin: 0; font-size: 30px; letter-spacing: -0.02em; }
+    .center-head p { margin: 8px 0 0; color: var(--muted); }
     .grid-two {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -92,12 +103,14 @@
     .app-shell {
       min-height: 100vh;
       display: grid;
-      grid-template-columns: 330px 1fr;
+      grid-template-columns: 360px 1fr;
       gap: 0;
+      max-width: 1380px;
+      margin: 0 auto;
     }
     .left {
       border-right: 1px solid var(--line);
-      background: #fff;
+      background: var(--panel);
       display: grid;
       grid-template-rows: auto 1fr;
       min-height: 100vh;
@@ -105,9 +118,10 @@
     .left-head {
       padding: 16px;
       border-bottom: 1px solid var(--line);
-      background: linear-gradient(180deg, #fff, #f9fbff);
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
     }
-    .left-head .title { font-weight: 700; }
+    .left-head .title { font-weight: 800; font-size: 22px; letter-spacing: -0.02em; }
     .left-head .idline { font-size: 12px; color: var(--muted); margin-top: 4px; }
     .left-body {
       overflow: auto;
@@ -115,58 +129,61 @@
       display: grid;
       gap: 12px;
       align-content: start;
-      background: #fcfdff;
     }
     .card {
-      background: #fff;
+      background: var(--panel-soft);
       border: 1px solid var(--line);
       border-radius: var(--radius);
       overflow: hidden;
     }
     .card-title {
       margin: 0;
-      padding: 10px 12px;
-      font-size: 11px;
-      letter-spacing: .08em;
+      padding: 12px;
+      font-size: 12px;
+      letter-spacing: .06em;
       text-transform: uppercase;
       color: var(--muted);
       border-bottom: 1px solid var(--line);
-      background: #fafcff;
+      background: #0b0b0b;
+      font-weight: 700;
     }
     .list { display: grid; }
-    .friend-item, .req-item, .nav-item {
+    .friend-item, .req-item, .discover-item, .config-entry {
       border: 0;
       border-bottom: 1px solid var(--line);
-      background: #fff;
+      background: transparent;
       text-align: left;
       padding: 11px 12px;
       width: 100%;
       cursor: pointer;
+      color: var(--ink);
     }
-    .friend-item:last-child, .req-item:last-child, .nav-item:last-child { border-bottom: 0; }
-    .friend-item.active, .nav-item.active { background: #eff6ff; }
+    .friend-item:last-child, .req-item:last-child, .discover-item:last-child, .config-entry:last-child { border-bottom: 0; }
+    .friend-item.active, .config-entry.active { background: rgba(255, 255, 255, 0.05); }
+    .friend-item:hover, .discover-item:hover, .config-entry:hover { background: rgba(255, 255, 255, 0.04); }
     .friend-item .name { font-weight: 600; font-size: 14px; }
-    .friend-item .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .friend-item .sub, .discover-item .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
     .main {
       display: grid;
       grid-template-rows: auto 1fr auto;
       min-height: 100vh;
-      background:
-        radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.8), transparent 30%),
-        linear-gradient(160deg, var(--bg-soft), #f8fafc 40%, #eef2f7);
+      background: linear-gradient(180deg, #050505, #000);
     }
     .main-head {
       padding: 14px 18px;
       border-bottom: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(10px);
       display: flex;
       justify-content: space-between;
       gap: 12px;
       align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 2;
     }
-    .head-title { font-weight: 700; font-size: 18px; }
+    .head-title { font-weight: 800; font-size: 20px; letter-spacing: -0.02em; }
     .head-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
     .chat-stream {
@@ -178,26 +195,25 @@
     }
     .bubble {
       max-width: min(72%, 720px);
-      border-radius: 14px;
+      border-radius: 16px;
       border: 1px solid var(--line);
-      background: #fff;
+      background: #0f0f0f;
       padding: 10px 12px;
       line-height: 1.45;
       font-size: 14px;
       white-space: pre-wrap;
       word-break: break-word;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
     }
     .bubble.me {
       margin-left: auto;
-      background: var(--brand-soft);
-      border-color: #bfdbfe;
+      background: #15202b;
+      border-color: #203547;
     }
     .meta { margin-top: 4px; font-size: 11px; color: var(--muted); }
 
     .composer {
       border-top: 1px solid var(--line);
-      background: rgba(255, 255, 255, 0.95);
+      background: rgba(0, 0, 0, 0.85);
       backdrop-filter: blur(8px);
       padding: 12px;
       display: grid;
@@ -249,7 +265,7 @@
             <div style="font-weight:700;">Social</div>
             <div class="muted" style="font-size:13px;margin-top:4px;">P2P direct chat with friend request and invite flows.</div>
           </div>
-          <button onclick="enterSocial()">Open</button>
+          <button class="primary" onclick="enterSocial()">Open</button>
         </div>
       </div>
     </div>
@@ -284,7 +300,7 @@
         <label><input type="checkbox" id="initAllowStranger" checked /> Allow stranger requests</label>
       </div>
       <div class="actions">
-        <button onclick="submitInit()">Initialize</button>
+        <button class="primary" onclick="submitInit()">Initialize</button>
         <button class="secondary" onclick="backHome()">Back</button>
       </div>
       <div id="setupMsg" class="muted" style="margin-top:10px;"></div>
@@ -302,7 +318,7 @@
         <input id="unlockPassphrase" type="password" placeholder="Unlock local key" />
       </div>
       <div class="actions">
-        <button onclick="submitUnlock()">Unlock</button>
+        <button class="primary" onclick="submitUnlock()">Unlock</button>
         <button class="secondary" onclick="backHome()">Back</button>
       </div>
       <div id="unlockMsg" class="muted" style="margin-top:10px;"></div>
@@ -312,7 +328,7 @@
   <section id="mainView" class="app-shell hidden">
     <aside class="left">
       <div class="left-head">
-        <div class="title">Assembler Social</div>
+        <div class="title">Social</div>
         <div id="meLine" class="idline">-</div>
       </div>
       <div class="left-body">
@@ -322,16 +338,21 @@
         </section>
 
         <section class="card">
-          <h3 class="card-title">Navigation</h3>
-          <div class="list">
-            <button id="navChat" class="nav-item active" onclick="switchMainTab('chat')">Chat</button>
-            <button id="navConfig" class="nav-item" onclick="switchMainTab('config')">Config</button>
-          </div>
+          <h3 class="card-title">Discovery</h3>
+          <div id="discoverList" class="list"></div>
         </section>
 
         <section class="card">
           <h3 class="card-title">Requests</h3>
           <div id="requestList" class="list"></div>
+        </section>
+
+        <section class="card">
+          <h3 class="card-title">Config</h3>
+          <button id="configEntry" class="config-entry" onclick="switchMainTab('config')">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.63-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.23-1.12.54-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94L2.82 14.52a.5.5 0 0 0-.12.64l1.92 3.32c.13.22.39.31.6.22l2.39-.96c.51.4 1.05.71 1.63.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.23 1.12-.54 1.63-.94l2.39.96c.22.09.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.03-1.58ZM12 15.5A3.5 3.5 0 1 1 12 8a3.5 3.5 0 0 1 0 7.5Z"/></svg>
+            Open Config
+          </button>
         </section>
       </div>
     </aside>
@@ -340,9 +361,9 @@
       <header class="main-head">
         <div>
           <div id="chatTitle" class="head-title">Select a friend</div>
-          <div id="chatSubtitle" class="head-sub">Pick a friend on the left to open the conversation.</div>
+          <div id="chatSubtitle" class="head-sub">Pick a friend to open the conversation.</div>
         </div>
-        <div class="head-sub">Realtime sync via SSE</div>
+        <div class="head-sub">SSE realtime</div>
       </header>
 
       <section id="chatPanel" class="chat-stream">
@@ -372,25 +393,23 @@
               <textarea id="cfgAvatar"></textarea>
             </div>
             <div class="row">
-              <label><input type="checkbox" id="cfgDiscoverable" /> Discoverable</label>
+              <label><input type="checkbox" id="cfgDiscoverable" /> Can be discovered</label>
               <label><input type="checkbox" id="cfgAllowStranger" /> Allow stranger requests</label>
             </div>
             <div class="row">
-              <button class="secondary" onclick="saveConfig()">Save Config</button>
+              <button class="primary" onclick="saveConfig()">Save Config</button>
             </div>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title">Add Friends</div>
+          <div class="card-title">Invite Link</div>
           <div style="padding:12px;display:grid;gap:8px;">
-            <input id="discoverTarget" placeholder="User ID to add" />
-            <button class="secondary" onclick="sendRequestByUserID()">Add Friend</button>
             <button class="secondary" onclick="createInvite()">Create Invite</button>
             <textarea id="inviteToken" class="mono" placeholder="Invite token"></textarea>
             <textarea id="inviteInput" class="mono" placeholder="Paste invite token"></textarea>
             <input id="inviteMessage" placeholder="Request message" />
-            <button onclick="requestByInvite()">Add By Invite</button>
+            <button class="primary" onclick="requestByInvite()">Add By Invite</button>
           </div>
         </div>
       </section>
@@ -398,7 +417,7 @@
       <footer id="composer" class="composer">
         <input id="chatInput" placeholder="Type a message..." />
         <input id="chatFile" class="attach" type="file" accept="image/*" />
-        <button onclick="sendMessage()">Send</button>
+        <button class="primary" onclick="sendMessage()">Send</button>
       </footer>
     </main>
   </section>
@@ -432,13 +451,13 @@
     function setSetupMessage(msg, isError) {
       const el = document.getElementById('setupMsg');
       el.textContent = msg || '';
-      el.style.color = isError ? '#dc2626' : '#64748b';
+      el.style.color = isError ? '#f4212e' : '#8b98a5';
     }
 
     function setUnlockMessage(msg, isError) {
       const el = document.getElementById('unlockMsg');
       el.textContent = msg || '';
-      el.style.color = isError ? '#dc2626' : '#64748b';
+      el.style.color = isError ? '#f4212e' : '#8b98a5';
     }
 
     function getSocialStage(state) {
@@ -453,9 +472,7 @@
       enteredSocial = true;
       const stage = getSocialStage(latestState || {});
       showStage(stage);
-      if (stage === 'main') {
-        renderMain();
-      }
+      if (stage === 'main') renderMain();
     }
 
     function backHome() {
@@ -484,20 +501,16 @@
       document.getElementById('cfgAvatar').value = me.avatar_data || '';
       document.getElementById('cfgDiscoverable').checked = Boolean(me.settings && me.settings.discoverable);
       document.getElementById('cfgAllowStranger').checked = Boolean(me.settings && me.settings.allow_stranger_requests);
+
       renderFriends();
+      renderDiscovery();
       renderRequests();
       renderMainPanel();
     }
 
     function switchMainTab(tab) {
       mainTab = tab;
-      if (tab === 'chat') {
-        document.getElementById('navChat').classList.add('active');
-        document.getElementById('navConfig').classList.remove('active');
-      } else {
-        document.getElementById('navChat').classList.remove('active');
-        document.getElementById('navConfig').classList.add('active');
-      }
+      document.getElementById('configEntry').classList.toggle('active', tab === 'config');
       renderMainPanel();
     }
 
@@ -508,13 +521,14 @@
 
       if (mainTab === 'config') {
         document.getElementById('chatTitle').textContent = 'Config';
-        document.getElementById('chatSubtitle').textContent = 'Manage profile, visibility and friend-add methods.';
+        document.getElementById('chatSubtitle').textContent = 'Manage profile and discovery/privacy settings.';
         chatPanel.classList.add('hidden');
         composer.classList.add('hidden');
         configPanel.classList.remove('hidden');
         return;
       }
 
+      document.getElementById('configEntry').classList.remove('active');
       configPanel.classList.add('hidden');
       chatPanel.classList.remove('hidden');
       composer.classList.remove('hidden');
@@ -539,9 +553,28 @@
       document.getElementById('friendList').innerHTML = html;
     }
 
+    function renderDiscovery() {
+      const me = latestState.me || {};
+      const friends = latestState.friends || [];
+      const friendSet = new Set(friends.map(f => f.user_id));
+      const all = latestState.discovery || [];
+      const list = all.filter(u => u.user_id && u.user_id !== me.user_id && !friendSet.has(u.user_id));
+
+      const html = list.map(u => {
+        const name = u.username || u.user_id;
+        return `<div class="discover-item"><div style="font-weight:600;">${esc(name)}</div><div class="sub">${esc(u.user_id)}</div><div class="row" style="margin-top:8px;"><button class="secondary" onclick="requestUser('${u.user_id}')">Add Friend</button></div></div>`;
+      }).join('') || '<div class="muted" style="padding:12px;">No discovered users yet.</div>';
+      document.getElementById('discoverList').innerHTML = html;
+    }
+
+    async function requestUser(userID) {
+      const res = await postJSON('/api/social/v1/friends/request', {target_user_id: userID, message: 'hi'});
+      if (res.error) alert(res.error);
+    }
+
     function renderRequests() {
       const reqs = (latestState.requests || []).filter(r => r.status === 'pending_in');
-      const html = reqs.map(r => `<div class="req-item"><div style="font-weight:600;">${esc(r.from_name || r.from_user_id)}</div><div class="muted" style="font-size:12px;margin-top:2px;">${esc(r.message || '')}</div><div class="row" style="margin-top:8px;"><button onclick="respondRequest('${r.request_id}', true)">Accept</button><button class="danger" onclick="respondRequest('${r.request_id}', false)">Reject</button></div></div>`).join('') || '<div class="muted" style="padding:12px;">No pending requests.</div>';
+      const html = reqs.map(r => `<div class="req-item"><div style="font-weight:600;">${esc(r.from_name || r.from_user_id)}</div><div class="muted" style="font-size:12px;margin-top:2px;">${esc(r.message || '')}</div><div class="row" style="margin-top:8px;"><button class="primary" onclick="respondRequest('${r.request_id}', true)">Accept</button><button class="danger" onclick="respondRequest('${r.request_id}', false)">Reject</button></div></div>`).join('') || '<div class="muted" style="padding:12px;">No pending requests.</div>';
       document.getElementById('requestList').innerHTML = html;
     }
 
@@ -555,7 +588,7 @@
 
       if (!selectedFriend) {
         document.getElementById('chatTitle').textContent = 'Select a friend';
-        document.getElementById('chatSubtitle').textContent = 'Pick a friend on the left to open the conversation.';
+        document.getElementById('chatSubtitle').textContent = 'Pick a friend to open the conversation.';
         document.getElementById('chatPanel').innerHTML = '<div class="muted">No conversation selected.</div>';
         return;
       }
@@ -662,13 +695,6 @@
         token: document.getElementById('inviteInput').value,
         message: document.getElementById('inviteMessage').value
       });
-      if (res.error) alert(res.error);
-    }
-
-    async function sendRequestByUserID() {
-      const target = document.getElementById('discoverTarget').value.trim();
-      if (!target) return;
-      const res = await postJSON('/api/social/v1/friends/request', {target_user_id: target, message: 'hi'});
       if (res.error) alert(res.error);
     }
 
